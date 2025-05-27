@@ -1,0 +1,157 @@
+<!-- scalping_signals_bot/web/miniapp.html -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>📈 Сигналы Бота</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      padding: 20px;
+      background: #f0f2f5;
+      color: #333;
+    }
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 14px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      margin-bottom: 30px;
+    }
+    .btn {
+      display: inline-block;
+      padding: 12px 24px;
+      background: #0077cc;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    #result {
+      font-size: 18px;
+      margin-top: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    th, td {
+      padding: 8px 12px;
+      text-align: left;
+    }
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+    th {
+      background-color: #0077cc;
+      color: white;
+    }
+    canvas {
+      max-width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <h2>📊 Telegram Trading Signals</h2>
+  <div class="card">
+    <button class="btn" onclick="getSignal()">🔍 Получить сигнал</button>
+    <div id="result"></div>
+  </div>
+
+  <div class="card">
+    <h3>📈 История вероятностей</h3>
+    <canvas id="chart"></canvas>
+  </div>
+
+  <div class="card">
+    <h3>🕒 Последние сигналы</h3>
+    <table id="history">
+      <thead>
+        <tr><th>Время</th><th>Актив</th><th>Вероятность</th><th>Сигнал</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    const api = 'https://your-server.com'; // Заменить на адрес
+    const chartCanvas = document.getElementById("chart").getContext("2d");
+    let chart;
+
+    async function getSignal() {
+      document.getElementById("result").innerText = "Загрузка...";
+      try {
+        const res = await fetch(api + "/signal");
+        const data = await res.json();
+        document.getElementById("result").innerHTML =
+          `📈 <b>${data.asset}</b><br/>` +
+          `🔢 Вероятность: <b>${(data.probability * 100).toFixed(2)}%</b><br/>` +
+          `📍 Сигнал: <span style='font-weight:bold;'>${data.decision}</span>`;
+        loadHistory();
+      } catch {
+        document.getElementById("result").innerText = "❌ Ошибка API";
+      }
+    }
+
+    async function loadHistory() {
+      try {
+        const res = await fetch(api + "/history");
+        const history = await res.json();
+        const tbody = document.querySelector("#history tbody");
+        tbody.innerHTML = "";
+
+        const labels = [];
+        const probs = [];
+
+        history.forEach(item => {
+          const time = new Date(item.timestamp).toLocaleString();
+          const row = `<tr>
+            <td>${time}</td>
+            <td>${item.asset}</td>
+            <td>${(parseFloat(item.probability) * 100).toFixed(2)}%</td>
+            <td>${item.decision}</td>
+          </tr>`;
+          tbody.insertAdjacentHTML("beforeend", row);
+          labels.push(time);
+          probs.push(parseFloat(item.probability) * 100);
+        });
+
+        if (chart) chart.destroy();
+        chart = new Chart(chartCanvas, {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [{
+              label: "Вероятность роста (%)",
+              data: probs,
+              borderColor: "#0077cc",
+              backgroundColor: "rgba(0,119,204,0.2)",
+              fill: true,
+              tension: 0.3
+            }]
+          },
+          options: {
+            scales: {
+              y: {
+                min: 0,
+                max: 100
+              }
+            }
+          }
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    Telegram.WebApp.ready();
+    Telegram.WebApp.expand();
+    loadHistory();
+  </script>
+</body>
+</html>
