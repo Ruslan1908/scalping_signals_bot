@@ -1,0 +1,6 @@
+torch
+pandas
+numpy
+pandas_ta
+python-telegram-bot==20.3
+streamlit
