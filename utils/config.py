@@ -7,6 +7,7 @@
 """
 
 import os
+import torch
 
 # Telegram
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_TOKEN", "8116686804:AAEQomMeFifefu66gUz1PRQl3tc2krRp8c4")
